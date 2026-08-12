@@ -10,12 +10,17 @@ export class HelloEcsCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // ECR Repository - reuse if exists
-    const repository = new ecr.Repository(this, 'HelloEcsRepo', {
-      repositoryName: 'hello-ecs',
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-      lifecycleRules: [{ maxImageCount: 5 }],
-    });
+    // Import existing ECR repository or create new one
+    let repository: ecr.IRepository;
+    try {
+      repository = ecr.Repository.fromRepositoryName(this, 'HelloEcsRepo', 'hello-ecs');
+    } catch {
+      repository = new ecr.Repository(this, 'HelloEcsRepo', {
+        repositoryName: 'hello-ecs',
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+        lifecycleRules: [{ maxImageCount: 5 }],
+      });
+    }
 
     // VPC
     const vpc = new ec2.Vpc(this, 'HelloEcsVpc', {
