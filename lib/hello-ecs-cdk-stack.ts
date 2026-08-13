@@ -63,8 +63,25 @@ export class HelloEcsCdkStack extends cdk.Stack {
     // Task Role (for app to access DynamoDB)
     const taskRole = new iam.Role(this, 'TaskRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      inlinePolicies: {
+        DynamoDBPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'dynamodb:PutItem',
+                'dynamodb:GetItem',
+                'dynamodb:UpdateItem',
+                'dynamodb:DeleteItem',
+                'dynamodb:Query',
+                'dynamodb:Scan',
+              ],
+              resources: [`arn:aws:dynamodb:us-east-1:505728816578:table/hello-ecs-table`],
+            }),
+          ],
+        }),
+      },
     });
-    table.grantReadWriteData(taskRole);
 
     // Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'HelloEcsTaskDef', {
