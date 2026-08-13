@@ -128,6 +128,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
       desiredCount: 1,
       securityGroups: [serviceSecurityGroup],
       assignPublicIp: false,
+      healthCheckGracePeriod: cdk.Duration.seconds(120),
     });
 
     listener.addTargets('EcsTarget', {
