@@ -4,6 +4,8 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
 
 export class HelloEcsCdkStack extends cdk.Stack {
@@ -33,13 +35,41 @@ export class HelloEcsCdkStack extends cdk.Stack {
       vpc,
     });
 
+    // DynamoDB Table
+    const table = new dynamodb.Table(this, 'HelloEcsTable', {
+      tableName: 'hello-ecs-table',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // Task Execution Role
     const executionRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy'),
       ],
+      inlinePolicies: {
+        SecretsManagerPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'secretsmanager:GetSecretValue',
+                'kms:Decrypt',
+              ],
+              resources: ['*'],
+            }),
+          ],
+        }),
+      },
     });
+
+    // Task Role (for app to access DynamoDB)
+    const taskRole = new iam.Role(this, 'TaskRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    });
+    table.grantReadWriteData(taskRole);
 
     // Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'HelloEcsTaskDef', {
@@ -47,6 +77,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
       memoryLimitMiB: 512,
       cpu: 256,
       executionRole,
+      taskRole,
     });
 
     // Container
@@ -54,6 +85,10 @@ export class HelloEcsCdkStack extends cdk.Stack {
       image: ecs.ContainerImage.fromEcrRepository(repository, 'latest'),
       memoryLimitMiB: 512,
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'hello-ecs' }),
+      environment: {
+        VAULT_ADDR: 'http://52.54.192.204:8200',
+        VAULT_TOKEN: 'root',
+      },
     });
 
     container.addPortMappings({ containerPort: 8080 });
@@ -104,6 +139,11 @@ export class HelloEcsCdkStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ECRRepository', {
       value: repository.repositoryUri,
       description: 'ECR Repository URI',
+    });
+
+    new cdk.CfnOutput(this, 'DynamoDBTable', {
+      value: table.tableName,
+      description: 'DynamoDB Table Name',
     });
   }
 }
