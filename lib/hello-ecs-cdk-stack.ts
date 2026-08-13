@@ -36,7 +36,8 @@ export class HelloEcsCdkStack extends cdk.Stack {
     });
 
     // DynamoDB Table
-    const table = dynamodb.Table.fromTableName(this, 'HelloEcsTable', 'hello-ecs-table');
+    //const table = dynamodb.Table.fromTableName(this, 'HelloEcsTable', 'hello-ecs-table');
+    const table = new dynamodb.Table(this, 'HelloEcsTable', {  tableName: 'hello-ecs-table',  partitionKey: {    name: 'id',    type: dynamodb.AttributeType.STRING,  },  billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,  removalPolicy: cdk.RemovalPolicy.RETAIN,});
 
     // Task Execution Role
     const executionRole = new iam.Role(this, 'TaskExecutionRole', {
