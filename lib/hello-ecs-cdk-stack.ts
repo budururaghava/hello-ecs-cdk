@@ -86,7 +86,8 @@ export class HelloEcsCdkStack extends cdk.Stack {
       memoryLimitMiB: 512,
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'hello-ecs' }),
       environment: {
-        VAULT_ADDR: 'http://52.54.192.204:8200',
+        VAULT_HOST: '52.54.192.204',
+        VAULT_PORT: '8200',
         VAULT_TOKEN: 'root',
       },
     });
