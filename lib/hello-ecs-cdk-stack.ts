@@ -119,7 +119,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
       serviceName: 'hello-ecs-service',
       cluster,
       taskDefinition,
-      desiredCount: 1,
+      desiredCount: 0,
       securityGroups: [serviceSecurityGroup],
       assignPublicIp: false,
       healthCheckGracePeriod: cdk.Duration.seconds(120),
