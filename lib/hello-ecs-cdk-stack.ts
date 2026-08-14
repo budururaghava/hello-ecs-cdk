@@ -37,7 +37,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
 
     // DynamoDB Table
     //const table = dynamodb.Table.fromTableName(this, 'HelloEcsTable', 'hello-ecs-table');
-    const table = new dynamodb.Table(this, 'HelloEcsTable', {  tableName: 'hello-ecs-table',  partitionKey: {    name: 'id',    type: dynamodb.AttributeType.STRING,  },  billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,  removalPolicy: cdk.RemovalPolicy.RETAIN,});
+    const table = new dynamodb.Table(this, 'HelloEcsTable', {  tableName: 'hello-ecs-table',  partitionKey: {    name: 'id',    type: dynamodb.AttributeType.STRING,  },  billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,  removalPolicy: cdk.RemovalPolicy.DESTROY,});
     const dynamoConfigSecret = new secretsmanager.Secret(this, 'DynamoConfigSecret', { secretName: 'hello-ecs/dynamodb-config', secretObjectValue: { TABLE_NAME: cdk.SecretValue.unsafePlainText(table.tableName), AWS_REGION: cdk.SecretValue.unsafePlainText(this.region) } });
 
     // Task Execution Role
