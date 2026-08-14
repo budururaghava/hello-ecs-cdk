@@ -38,6 +38,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
     // DynamoDB Table
     //const table = dynamodb.Table.fromTableName(this, 'HelloEcsTable', 'hello-ecs-table');
     const table = new dynamodb.Table(this, 'HelloEcsTable', {  tableName: 'hello-ecs-table',  partitionKey: {    name: 'id',    type: dynamodb.AttributeType.STRING,  },  billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,  removalPolicy: cdk.RemovalPolicy.RETAIN,});
+    const dynamoConfigSecret = new secretsmanager.Secret(this, 'DynamoConfigSecret', { secretName: 'hello-ecs/dynamodb-config', secretObjectValue: { TABLE_NAME: cdk.SecretValue.unsafePlainText(table.tableName), AWS_REGION: cdk.SecretValue.unsafePlainText(this.region) } });
 
     // Task Execution Role
     const executionRole = new iam.Role(this, 'TaskExecutionRole', {
@@ -60,6 +61,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
         }),
       },
     });
+    dynamoConfigSecret.grantRead(executionRole);
 
     // Task Role (for app to access DynamoDB)
     const taskRole = new iam.Role(this, 'TaskRole', {
@@ -94,16 +96,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
     });
 
     // Container
-    const container = taskDefinition.addContainer('hello-ecs-container', {
-      image: ecs.ContainerImage.fromEcrRepository(repository, 'latest'),
-      memoryLimitMiB: 512,
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'hello-ecs' }),
-      environment: {
-        VAULT_HOST: '52.54.192.204',
-        VAULT_PORT: '8200',
-        VAULT_TOKEN: 'root',
-      },
-    });
+    const container = taskDefinition.addContainer('hello-ecs-container', { image: ecs.ContainerImage.fromEcrRepository(repository, 'latest'), memoryLimitMiB: 512, logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'hello-ecs' }), secrets: { TABLE_NAME: ecs.Secret.fromSecretsManager(dynamoConfigSecret, 'TABLE_NAME'), AWS_REGION: ecs.Secret.fromSecretsManager(dynamoConfigSecret, 'AWS_REGION') } });
 
     container.addPortMappings({ containerPort: 8080 });
 
