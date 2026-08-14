@@ -19,7 +19,7 @@ export class HelloEcsCdkStack extends cdk.Stack {
     } catch {
       repository = new ecr.Repository(this, 'HelloEcsRepo', {
         repositoryName: 'hello-ecs',
-        removalPolicy: cdk.RemovalPolicy.RETAIN,
+        
         lifecycleRules: [{ maxImageCount: 5 }],
       });
     }
